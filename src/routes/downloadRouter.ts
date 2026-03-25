@@ -1,12 +1,9 @@
 import { Hono } from 'hono';
+import downloadController from '../controllers/downloadController.js';
 
 // Create router instance
 const router = new Hono();
-const downloadRouter = router.post('/download', (c) => {
-    return c.json({
-        msg: 'Hello, from download route'
-    }, 200);
-});
+const downloadRouter = router.post('/download', downloadController);
 
 // Export
 export default downloadRouter;
