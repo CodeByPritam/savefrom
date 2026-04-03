@@ -13,4 +13,4 @@ const brightdataproxy = () => {
 }
 
 // Export
-export default { oxylabproxy, brightdataproxy };
+export { oxylabproxy, brightdataproxy };
