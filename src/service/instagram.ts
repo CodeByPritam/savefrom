@@ -5,12 +5,11 @@ import { URLSearchParams } from "node:url";
 import { v7 } from 'uuid';
 
 // Handle posts & reels HTTP request
-const rpCaller = async (c: Context, url: string, shortcode: string, type: string) => {
+const rpService = async (c: Context, url: string, shortcode: string, type: string) => {
     return c.json({
-        msg: 'Hello, from rpCaller',
-        url
+        msg: 'Hello, from rpService',
     }, 200)
 };
 
 // Export
-export { rpCaller };
+export { rpService };

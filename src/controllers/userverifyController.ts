@@ -1,10 +1,10 @@
-import type { Handler } from 'hono';
+import type { Context, Handler } from 'hono';
 import { v7 } from 'uuid';
 import _Config from '../config/config.js';
 import redis from '../config/redis.js';
 
 // userverify controller
-const userverifyController: Handler = async (c) => {
+const userverifyController: Handler = async (c: Context) => {
     const version = (c.req.param("version") as string).toLowerCase();
     const ipAddress = '127.0.0.1';
     const idx = v7();
