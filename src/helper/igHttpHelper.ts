@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
 // Docs ID
-const docsID = {
+const docsIDs = {
     'PolarisPostActionLoadPostQueryQuery': '8845758582119845',
     'PolarisProfilePageContentQuery': '28812098038405011',
 }
@@ -72,6 +72,51 @@ const rpHeaders = (friendlyName: string, fullUrl: string) => {
     };
 };
 
+// Post & Reels Payload
+const rpPayload = (friendlyName: string, variables: string) => {
+    const randomString = (length: number) => {
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); }
+        return result;
+    };
+    const randomHex = (min: number, max: number) => { return Math.floor(Math.random() * (max - min + 1) + min).toString(16); };
+    const timestamp = () => Math.floor(Date.now() / 1000).toString();
+    const randomBigIntLike = () => {
+        const randPart = Math.floor(Math.random() * 1e18).toString().padStart(18, '0');
+        return '7' + randPart;
+    };
+
+    // Return
+    return {
+        av: String(Math.floor(Math.random() * 1000000000)),
+        __d: Math.random() < 0.5 ? 'www' : 'm',
+        __user: String(Math.floor(Math.random() * 1000000000)),
+        __a: String(Math.random() < 0.5 ? 0 : 1),
+        __req: randomHex(1, 255),
+        __hs: `${Math.floor(Math.random() * (20199 - 20000 + 1)) + 20000
+            }.HYP:instagram_web_pkg.${Math.floor(Math.random() * 3) + 1
+            }.${Math.random() < 0.5 ? 0 : 1}..${Math.random() < 0.5 ? 0 : 1}`,
+        dpr: [1, 1.5, 2, 3][Math.floor(Math.random() * 4)],
+        __ccg: 'EXCELLENT',
+        __rev: String(Math.floor(Math.random() * (9999999999 - 1000000000 + 1)) + 1000000000),
+        __s: `${randomString(6)}:${randomString(6)}:${randomString(6)}`,
+        __hsi: randomBigIntLike(),
+        __dyn: `7xe${randomString(50)}1mxu${randomString(50)}w9a${randomString(50)}`,
+        __csr: randomString(200),
+        __comet_req: String(Math.floor(Math.random() * 10) + 1),
+        lsd: 'AV' + randomString(9),
+        jazoest: String(2000 + Number(timestamp().slice(-4))),
+        __spin_r: String(Math.floor(Math.random() * (9999999999 - 1000000000 + 1)) + 1000000000),
+        __spin_b: Math.random() < 0.5 ? 'trunk' : 'stable',
+        __spin_t: timestamp(),
+        fb_api_caller_class: 'RelayModern',
+        fb_api_req_friendly_name: friendlyName,
+        variables: JSON.stringify(variables),
+        server_timestamps: 'true',
+        doc_id: (docsIDs as any)[friendlyName],
+    };
+};
 
 // Export
-export { rpHeaders };
+export { rpHeaders, rpPayload };
