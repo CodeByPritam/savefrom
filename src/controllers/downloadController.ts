@@ -1,9 +1,11 @@
-import type { Handler } from 'hono';
+import type { Context, Handler } from 'hono';
 import _Config from '../config/config.js';
 import redis from '../config/redis.js';
+import { dissectIgUrl } from '../utils/igUtils.js';
+import { rpCaller } from '../service/instagram.js';
 
 // Download controller
-const downloadController: Handler = async (c) => {
+const downloadController: Handler = async (c: Context) => {
     const version = (c.req.param("version") as string).toLowerCase();
     const platform = (c.req.param("platform") as string).toLowerCase();
     const ipAddress = '127.0.0.1';
@@ -46,9 +48,28 @@ const downloadController: Handler = async (c) => {
 
         // Instagram: Rest of logic
         if (platform === 'instagram') {
+            const refinedUrl = url.split("?")[0].trim();
+            const dIgUrl = dissectIgUrl(refinedUrl);
+            const shortcode = (dIgUrl as any).shortcode;
+
+            // Define types
+            let type;
+            if ((dIgUrl as any).isPost) { type = 'post' }
+            if ((dIgUrl as any).isReel) { type = 'reels' }
+            if ((dIgUrl as any).isProfile) { type = 'profile' }
+
+            // Cases
+            if ((dIgUrl as any).isPost || (dIgUrl as any).isReel) { return await rpCaller(c, refinedUrl, shortcode, type as string); }
+        }
+
+        // else case
+        else {
             return c.json({
-                msg: 'Download from instagram'
-            }, 200);
+                success: false,
+                data: [],
+                message: "service not implemented, yet",
+                timestamp: new Date().toISOString()
+            }, 404)
         }
 
     } else {
