@@ -177,7 +177,70 @@ const wpiHeaders = (fullUrl: string) => {
         'X-Requested-With': 'XMLHttpRequest',
         'X-Web-Session-Id': `${randomString(6)}:${randomString(6)}:${randomString(6)}`
     };
-}
+};
+
+// Feed Headers
+const feedHeaders = (referer: string) => {
+    const randomString = (length: number) => {
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); }
+        return result;
+    };
+    const platforms = [
+        { ua: 'Windows NT 10.0; Win64; x64', platform: 'Windows', platform_version: '10.0.0' },
+        { ua: 'Macintosh; Intel Mac OS X 10_15_7', platform: 'macOS', platform_version: '10.15.7' },
+        { ua: 'X11; Linux x86_64', platform: 'Linux', platform_version: '0.0.0' },
+    ];
+    const colorschemes = ['light', 'dark'];
+    const platform = platforms[Math.floor(Math.random() * platforms.length)];
+    const majorVersion = Math.floor(Math.random() * (134 - 120 + 1)) + 120;
+    const build = Math.floor(Math.random() * (7000 - 6000 + 1)) + 6000;
+    const patch = Math.floor(Math.random() * (200 - 100 + 1)) + 100;
+    const fullVersion = `${majorVersion}.0.${build}.${patch}`;
+    const userAgent = `Mozilla/5.0 (${platform.ua}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${majorVersion}.0.0.0 Safari/537.36`;
+    const secChUa = `"Chromium";v="${majorVersion}", "Not:A-Brand";v="24", "Google Chrome";v="${majorVersion}"`;
+    const secChUaFullVersionList = `"Chromium";v="${fullVersion}", "Not:A-Brand";v="24.0.0.0", "Google Chrome";v="${fullVersion}"`;
+    const csrf = randomString(32);
+    const locales = ['US', 'IN', 'GB'];
+    const locale = locales[Math.floor(Math.random() * locales.length)];
+
+    // Return
+    return {
+        'Accept': '*/*',
+        'Accept-Language': `en-${locale},en;q=${(Math.floor(Math.random() * 3) + 7) / 10},hi;q=0.${Math.floor(Math.random() * 4) + 5}`,
+        'Cookie': [
+            `mid=${randomString(26)}`,
+            `ig_did=${randomString(8).toUpperCase()}-${randomString(4).toUpperCase()}-${randomString(4).toUpperCase()}-${randomString(4).toUpperCase()}-${randomString(12).toUpperCase()}`,
+            'ig_nrcb=1',
+            `ps_l=${Math.random() < 0.5 ? 0 : 1}`,
+            `ps_n=${Math.random() < 0.5 ? 0 : 1}`,
+            `datr=${randomString(20)}`,
+            `csrftoken=${csrf}`,
+            `wd=${Math.floor(Math.random() * (1920 - 800 + 1)) + 800}x${Math.floor(Math.random() * (1080 - 600 + 1)) + 600}`
+        ].join('; '),
+        'DNT': Math.random() < 0.5 ? '0' : '1',
+        'Priority': `u=${Math.floor(Math.random() * 3) + 1}, i`,
+        'Referer': referer,
+        'Sec-Ch-Prefers-Color-Scheme': colorschemes[Math.floor(Math.random() * colorschemes.length)],
+        'Sec-Ch-Ua': secChUa,
+        'Sec-Ch-Ua-Full-Version-List': secChUaFullVersionList,
+        'Sec-Ch-Ua-Mobile': `?${Math.random() < 0.5 ? 0 : 1}`,
+        'Sec-Ch-Ua-Model': '""',
+        'Sec-Ch-Ua-Platform': `"${platform.platform}"`,
+        'Sec-Ch-Ua-Platform-Version': `"${platform.platform_version}"`,
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'User-Agent': userAgent,
+        'X-Asbd-Id': String(Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000),
+        'X-Csrftoken': csrf,
+        'X-Ig-App-Id': '936619743392459',
+        'X-IG-WWW-Claim': '0',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-Web-Session-Id': `${randomString(6)}:${randomString(6)}:${randomString(6)}`,
+    };
+};
 
 // Export
-export { rpHeaders, rpPayload, wpiHeaders };
+export { rpHeaders, rpPayload, wpiHeaders, feedHeaders };
