@@ -373,7 +373,7 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
 
     // Ready Url
     const feedUrl = new URL(`https://www.instagram.com/api/v1/feed/user/${shortcode}/username/`);
-    feedUrl.searchParams.set("count", "12");
+    feedUrl.searchParams.set("count", "9");
 
     // Error Handling
     let getfeed;
@@ -469,15 +469,37 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
         let feedArray = [];
         for (const elm of getfeed) {
 
-            // images
+            // images (carousel)
             if (elm.product_type === 'carousel_container') {
-                const cmnode = elm.carousel_media.map((cm: any) => cm.image_versions2.candidates);
+                const cmnode = elm.carousel_media.map((cm: any) => {
+                    const candidates = cm.image_versions2.candidates;
+                    const top3 = candidates
+                        .sort((a: any, b:any) => (b.width * b.height) - (a.width * a.height))
+                        .slice(0,3)
+                        .map((img: any, idx: number) => ({
+                            id: `${v7()}-${idx+1}`,
+                            url: img.url,
+                            width: img.width,
+                            height: img.height
+                        }));
+                    return top3;
+                });
                 feedArray.push({ node: cmnode, type: ['image'] });
             }
 
             // videos
             if (elm.product_type === 'clips') {
-                feedArray.push({ node: elm.video_versions, type: ['video'] });
+                const candidates = elm.video_versions;
+                const top3 = candidates
+                    .sort((a: any, b: any) => (b.width * b.height) - (a.width * a.height))
+                    .slice(0, 3)
+                    .map((vid: any, idx: number) => ({
+                        id: `${v7()}-${idx + 1}`,
+                        url: vid.url,
+                        width: vid.width,
+                        height: vid.height,
+                    }));
+                feedArray.push({ node: top3, type: ['video'] });
             }
 
         }
@@ -493,7 +515,7 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
                     is_public: true,
                     is_single: false
                 },
-                sf: { feedArray }
+                sf: feedArray
             },
             owner: owner,
             message: `public account detected, with content`,
