@@ -442,7 +442,7 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
                         id: `${v7()}`,
                         url: img.url,
                         resolution: `${img.width}x${img.height}`
-                    }));
+                    }))[0];
                 });
                 feedArray.push({ node: cmnode, type: ['image'] });
             }
@@ -457,7 +457,7 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
                     id: `${v7()}`,
                     url: vid.url,
                     resolution: `${vid.width}x${vid.height}`
-                }));
+                }))[0];
                 feedArray.push({ node: top3, type: ['video'] });
             }
 
