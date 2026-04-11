@@ -62,11 +62,11 @@ const downloadController: Handler = async (c: Context) => {
             if ((dIgUrl as any).isPost || (dIgUrl as any).isReel) { return await rpService(c, refinedUrl, shortcode, type as string); }
             if((dIgUrl as any).isProfile) { return await pfService(c, refinedUrl, shortcode, type as string); }
 
-            // Should never reach :: keeps Hono happy
+            // else case :: should never reach
             return c.json({
                 success: false,
                 data: [],
-                message: 'unhandled instagram URL routing',
+                message: 'unhandled instagram shortcode routing',
                 timestamp: new Date().toISOString(),
             }, 422);
         }
