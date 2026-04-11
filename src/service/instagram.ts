@@ -1,10 +1,10 @@
 import type { Context } from 'hono';
 import { fetch, ProxyAgent } from 'undici';
 import _Config from '../config/config.js';
-import { URLSearchParams } from "node:url";
+import { URLSearchParams, URL } from "node:url";
 import { v7 } from 'uuid';
 import { oxylabproxy, brightdataproxy } from '../config/proxy.js';
-import { rpHeaders, rpPayload } from '../helper/igHttpHelper.js';
+import { rpHeaders, rpPayload, wpiHeaders } from '../helper/igHttpHelper.js';
 
 // Handle posts & reels HTTP request
 const rpService = async (c: Context, url: string, shortcode: string, type: string) => {
@@ -196,5 +196,29 @@ const rpService = async (c: Context, url: string, shortcode: string, type: strin
     
 };
 
+// Handle profile & feed HTTP request
+const pfService = async (c: Context, url: string, shortcode: string, type: string) => {
+    const headers = wpiHeaders(url);
+
+    // 01:: Make wpi request
+    const wpi = new URL(`https://instagram.com/api/v1/users/web_profile_info/`);
+    wpi.searchParams.set('username', shortcode);
+    const call = await fetch(wpi, {
+        method: 'GET',
+        headers: headers,
+        dispatcher: new ProxyAgent({ uri: brightdataproxy() }),
+        redirect: 'follow'
+    });
+
+    // Response
+    const rawWpiGraphQl = await call.json();
+    const response = rawWpiGraphQl
+
+    // Return
+    return c.json({
+        response
+    }, 200);
+}
+
 // Export
-export { rpService };
+export { rpService, pfService };
