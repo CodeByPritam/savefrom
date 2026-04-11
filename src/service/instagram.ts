@@ -357,13 +357,13 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
     let getfeed;
     try {
         const profileJson = await profileResult.value.json();
-        getprofile = (profileJson as any).data.user ?? null;
-    } 
-    catch (error) { return buildError(c, 500, 'failed to parse profile JSON response'); }
-    try {
         const feedJson = await feedResult.value.json();
+
+        // Extract
+        getprofile = (profileJson as any).data.user ?? null;
         getfeed = (feedJson as any).items ?? []
-    } catch (error) { return buildError(c, 500, 'failed to parse feed JSON response'); }
+    } 
+    catch (error) { return buildError(c, 500, 'failed to parse profile & feed JSON response'); }
 
     // Build OwnerObject
     const owner: Owner = {
@@ -437,12 +437,11 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
                     const candidates = cm.image_versions2.candidates || [];
                     return [...candidates]
                     .sort((a, b) => (b.width * b.height) - (a.width * a.height))
-                    .slice(0,3)
-                    .map((img, idx) => ({
-                        id: `${v7()}-${idx+1}`,
+                    .slice(0,1)
+                    .map((img: any) => ({
+                        id: `${v7()}`,
                         url: img.url,
-                        width: img.width,
-                        height: img.height
+                        resolution: `${img.width}x${img.height}`
                     }));
                 });
                 feedArray.push({ node: cmnode, type: ['image'] });
@@ -453,12 +452,11 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
                 const candidates = elm.video_versions || [];
                 const top3 = [...candidates]
                 .sort((a, b) => (b.width * b.height) - (a.width * a.height))
-                .slice(0, 3)
-                .map((vid, idx) => ({
-                    id: `${v7()}-${idx + 1}`,
+                .slice(0, 1)
+                .map((vid: any) => ({
+                    id: `${v7()}`,
                     url: vid.url,
-                    width: vid.width,
-                    height: vid.height,
+                    resolution: `${vid.width}x${vid.height}`
                 }));
                 feedArray.push({ node: top3, type: ['video'] });
             }
