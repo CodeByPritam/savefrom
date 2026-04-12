@@ -2,7 +2,7 @@ import type { Context, Handler } from 'hono';
 import _Config from '../config/config.js';
 import redis from '../config/redis.js';
 import { dissectIgUrl } from '../utils/igUtils.js';
-import { rpService, pfService } from '../service/instagram.js';
+import { rpService, pfService, aService } from '../service/instagram.js';
 
 // Download controller
 const downloadController: Handler = async (c: Context) => {
@@ -63,7 +63,8 @@ const downloadController: Handler = async (c: Context) => {
 
             // Cases
             if ((dIgUrl as any).isPost || (dIgUrl as any).isReel) { return await rpService(c, refinedUrl, shortcode, type as string); }
-            if((dIgUrl as any).isProfile) { return await pfService(c, refinedUrl, shortcode, type as string); }
+            if ((dIgUrl as any).isProfile) { return await pfService(c, refinedUrl, shortcode, type as string); }
+            if ((dIgUrl as any).isAudio) { return await aService(c, refinedUrl, shortcode, type as string); }
 
             // else case :: should never reach
             return c.json({
