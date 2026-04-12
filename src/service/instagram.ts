@@ -4,7 +4,7 @@ import _Config from '../config/config.js';
 import { URLSearchParams, URL } from "node:url";
 import { v7 } from 'uuid';
 import { oxylabproxy, brightdataproxy } from '../config/proxy.js';
-import { rpHeaders, rpPayload, wpiHeaders, feedHeaders, audioHeaders } from '../helper/igHttpHelper.js';
+import { rpHeaders, rpPayload, wpiHeaders, feedHeaders } from '../helper/igHttpHelper.js';
 
 /* =============================================================== */
 /* ============== Module-level :: proxy singletons =============== */
@@ -487,10 +487,21 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
 /* ============================================================ */
 const aService = async (c: Context, url: string, shortcode: string, type: string) => {
     return c.json({
-        url,
-        shortcode,
-        type
-    }, 200);
+        success: false,
+        urid: v7(),
+        jar: {
+            media: {
+                actual_type: type,
+                expected_type: [ 'audio/mp3' ],
+                is_public: null,
+                is_single: null
+            },
+            sf: {}
+        },
+        owner: NullOwner,
+        message: `audio links are not supported, use reels link to download audio`,
+        timestamp: new Date().toISOString()
+    }, 406 as any);
 }
 
 // Export
