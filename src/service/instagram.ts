@@ -487,7 +487,7 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
 /* ============================================================ */
 const aService = async (c: Context, url: string, shortcode: string, type: string) => {
     return c.json({
-        success: false,
+        success: true,
         urid: v7(),
         jar: {
             media: {
@@ -501,7 +501,7 @@ const aService = async (c: Context, url: string, shortcode: string, type: string
         owner: NullOwner,
         message: `audio links are not supported, use reels link to download audio`,
         timestamp: new Date().toISOString()
-    }, 406 as any);
+    }, 200 as any);
 }
 
 // Export
