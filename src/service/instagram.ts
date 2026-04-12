@@ -427,8 +427,6 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
     // Full Open Person :: Public account + With feed
     if (!owner.account.is_private && getfeed.length >= 1 && (owner.account.total_media_count  ?? 0) >= 1) {
         let feedArray = [];
-
-        // loop through
         for (const elm of getfeed) {
 
             // images (carousel)
@@ -439,7 +437,6 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
                     .sort((a, b) => (b.width * b.height) - (a.width * a.height))
                     .slice(0,1)
                     .map((img: any) => ({
-                        id: `${v7()}`,
                         url: img.url,
                         resolution: `${img.width}x${img.height}`
                     }))[0];
@@ -454,7 +451,6 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
                 .sort((a, b) => (b.width * b.height) - (a.width * a.height))
                 .slice(0, 1)
                 .map((vid: any) => ({
-                    id: `${v7()}`,
                     url: vid.url,
                     resolution: `${vid.width}x${vid.height}`
                 }))[0];
