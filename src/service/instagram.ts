@@ -20,7 +20,7 @@ const brightdataAgent = new ProxyAgent({
 /* ==================== @types:: Response Interfaces =================== */
 /* ===================================================================== */
 
-// interface : Jar -> Media
+// @interface : JarMedia
 interface JarMedia {
     actual_type: string | null;
     expected_type: string[] | null;
@@ -28,7 +28,7 @@ interface JarMedia {
     is_single: boolean | null;
 }
 
-// interface : Owner Account
+// @interface : OwnerAccount
 interface OwnerAccount {
     is_private: boolean | null;
     is_verified: boolean | null;
@@ -41,7 +41,7 @@ interface OwnerAccount {
     external_links: object;
 }
 
-// interface :: Owner
+// @interface :: Owner
 interface Owner {
     id: string | null;
     name: string | null;
@@ -49,6 +49,19 @@ interface Owner {
     profileUrl: string | null;
     account: OwnerAccount;
 }
+
+// @interface :: ApiResponse
+interface ApiResponse {
+    success: boolean;
+    _idx: string;
+    jar: { media: JarMedia; sf: object };
+    owner: Owner;
+    message: string;
+    timestamp: string;
+}
+
+// Http Status Code
+type HttpStatus = 200 | 404 | 406 | 422 | 500 | 502;
 
 /* ============================================================ */
 /* ==================== Shared Helpers ======================== */
@@ -73,52 +86,60 @@ const NullOwner: Owner = {
     },
 }
 
-// Null :: Empty Jar
-const NullJar = {
+// Null :: Empty Jar - May Used In Error Responses
+const NullJar: ApiResponse['jar'] = {
     media: {
         actual_type: null,
         expected_type: null,
         is_public: null,
         is_single: null,
-    } as JarMedia,
+    },
     sf: {},
 }
 
-// Build Error
-const buildError = (c: Context, status: number, message: string) => {
-    c.json({
-        success: false,
-        urid: v7(),
-        jar: NullJar,
-        owner: NullOwner,
-        message,
-        timestamp: new Date().toISOString()
-    }, status as any);
+/* ================================================================ */
+/* =================== Response Builder Helpers =================== */
+/* ================================================================ */
+
+// Build Standard Response Envelope & Returns
+const buildResponse = (c: Context, status: HttpStatus, partial: Partial<Omit<ApiResponse, '_idx' | 'timestamp'>>) => {
+    const body: ApiResponse = {
+        success: partial.success ?? false,
+        _idx: v7(),
+        jar: partial.jar ?? NullJar,
+        owner: partial.owner ?? NullOwner,
+        message: partial.message ?? '',
+        timestamp: new Date().toISOString(),
+    };
+    return c.json(body, status);
+};
+
+// Build Error Response - Avoids Repeating The Full Object
+const buildError = (c: Context, status: HttpStatus, message: string) => {
+    buildResponse(c, status, { success: false, message });
 }
 
-// Build RP Owner
-const buildOwnerForRPs = (owner: any): Owner => {
-    return {
-        id: owner.id ?? null,
-        name: owner.full_name ?? null,
-        username: owner.username ?? null,
-        profileUrl: owner.profile_pic_url ?? null,
-        account: {
-            is_private: owner.is_private ?? null,
-            is_verified: owner.is_verified ?? null,
-            _type: null,
-            displaylabel: null,
-            total_media_count: owner.edge_owner_to_timeline_media.count ?? null,
-            followers_count: owner.edge_followed_by.count ?? null,
-            following_count: null,
-            desc: null,
-            external_links: {}
-        }
+// Build OwnerForRPs - ( Reels / Posts )
+const buildOwnerForRPs = (raw: any): Owner => ({
+    id: raw.id ?? null,
+    name: raw.full_name ?? null,
+    username: raw.username ?? null,
+    profileUrl: raw.profile_pic_url ?? null,
+    account: {
+        is_private: raw.is_private ?? null,
+        is_verified: raw.is_verified ?? null,
+        _type: null,
+        displaylabel: null,
+        total_media_count: raw.edge_owner_to_timeline_media.count ?? null,
+        followers_count: raw.edge_followed_by.count ?? null,
+        following_count: null,
+        desc: null,
+        external_links: {},
     }
-}
+});
 
 /* ============================================================ */
-/* =========== Handle Posts & Reels HTTP Request ============== */
+/* =========== Reels & Posts Service ( rpService ) ============ */
 /* ============================================================ */
 const rpService = async (c: Context, url: string, shortcode: string, type: string) => {
     const path = 'https://www.instagram.com/graphql/query/';
@@ -132,19 +153,17 @@ const rpService = async (c: Context, url: string, shortcode: string, type: strin
         hoisted_comment_id: null,
         hoisted_reply_id: null,
     } as any));
-
-    // Generate Body & Response
     const body = new URLSearchParams(payload as any).toString();
 
-    // Error Handling
-    let rawGraphQl: unknown;
+    // Service Fetch
+    let rawGraphQl: any;
     try {
         const call = await fetch(`${path}`, {
             method: 'POST',
             headers: headers,
             body: body,
             dispatcher: oxylabAgent,
-            redirect: 'follow'
+            redirect: 'follow',
         });
 
         // Call failed
@@ -155,7 +174,7 @@ const rpService = async (c: Context, url: string, shortcode: string, type: strin
         // Process
         rawGraphQl = await call.json();
     } catch (error) {
-        return buildError(c, 500, `reels & posts service, internal server error: ${(error as Error).message}`);
+        return buildError(c, 500, `reels & posts service error: ${(error as Error).message}`);
     }
 
     // Further processing
@@ -163,56 +182,68 @@ const rpService = async (c: Context, url: string, shortcode: string, type: strin
 
     // Private content
     if (response === null || response === undefined) {
-        return c.json({
+        return buildResponse(c, 404, {
             success: false,
-            urid: v7(),
             jar: {
                 media: {
                     actual_type: type,
                     expected_type: null,
                     is_public: null,
-                    is_single: null
+                    is_single: null,
                 },
-                sf: {}
+                sf: {},
             },
-            owner: NullOwner,
-            message: `You are trying to download a private ${type}, we do not support private downloading`,
-            timestamp: new Date().toISOString()
-        }, 404 as any);
+            message: `you are trying to download a private ${type}, private content is not supported`,
+        });
     }
 
     // Public :: Single Post
     if ((response.__typename === "XDTGraphImage" || response.__isXDTGraphMediaInterface === "XDTGraphImage") && !response.is_video) {
-        const displayResources = response.display_resources;
+        const dr = (response.display_resources ?? []).map((leaf: any) => ({
+            qualityid: v7(),
+            src: leaf.src,
+            width: leaf.config_width ?? null,
+            height: leaf.config_height ?? null,
+        }));
 
         // Response
-        return c.json({
+        return buildResponse(c, 200, {
             success: true,
-            urid: v7(),
             jar: {
                 media: {
                     actual_type: type,
                     expected_type: [ 'image' ],
                     is_public: true,
-                    is_single: true
+                    is_single: true,
                 },
-                sf: { dr: displayResources }
+                sf: { 
+                    idpost: v7(), 
+                    qualities: dr,
+                },
             },
             owner: buildOwnerForRPs(response.owner),
             message: `${type} fetched successfully`,
-            timestamp: new Date().toISOString()
-        }, 200 as any);
+        });
     }
 
     // Public :: Multiple Post
     if ((response.__typename === "XDTGraphSidecar" || response.__isXDTGraphMediaInterface === "XDTGraphSidecar") && !response.is_video) {
-        const edgeSideCar = response.edge_sidecar_to_children.edges ?? [];
-        const list = edgeSideCar.map((edge: any) => edge.node.display_resources);
+        const edgeSideCar: any[] = response.edge_sidecar_to_children.edges ?? [];
+        const mp = edgeSideCar.map((edge: any) => {
+
+            // Each qualities will get, its own pid, qid & return
+            const qualities = (edge.node.display_resources ?? []).map((leaf: any) => ({
+                qualityid: v7(),
+                src: leaf.src,
+                width: leaf.config_width ?? null,
+                height: leaf.config_height ?? null,
+            }));
+            return { idpost: v7(), qualities }
+        });
 
         // Response
-        return c.json({
+        return buildResponse(c, 200, {
             success: true,
-            urid: v7(),
             jar: {
                 media: {
                     actual_type: type,
@@ -220,40 +251,38 @@ const rpService = async (c: Context, url: string, shortcode: string, type: strin
                     is_public: true,
                     is_single: false
                 },
-                sf: { mp: list }
+                sf: mp
             },
             owner: buildOwnerForRPs(response.owner),
             message: `${type} fetched successfully`,
-            timestamp: new Date().toISOString()
-        }, 200 as any);
+        });
     }
 
-    // Public : Reels
+    // Public : Reels + Audio ( v2 )
     if ((response.__typename === "XDTGraphVideo" || response.__isXDTGraphMediaInterface === "XDTGraphVideo") && response.is_video) {
-        const displayResources = response.display_resources ?? [];
-        const highestQualityPreviewUrl = displayResources[displayResources.length - 1].src ?? null;
+        const displayResources: any[] = response.display_resources ?? [];
+        const highestQualityPreviewUrl = displayResources.at(-1).src ?? null;
         const videoUrl = response.video_url ?? null;
 
         // Return
-        return c.json({
+        return buildResponse(c, 200, {
             success: true,
-            urid: v7(),
             jar: {
                 media: {
                     actual_type: type,
                     expected_type: [ 'video' ],
                     is_public: true,
-                    is_single: true
+                    is_single: true,
                 },
                 sf: {
+                    idreel: v7(),
                     previewUrl: highestQualityPreviewUrl,
-                    videoUrl: videoUrl
-                }
+                    vidoeUrl: videoUrl,
+                },
             },
             owner: buildOwnerForRPs(response.owner),
             message: `${type} fetched successfully`,
-            timestamp: new Date().toISOString()
-        }, 200 as any);
+        });
     }
 
     // Unknown / Unhandled types
