@@ -4,7 +4,7 @@ import _Config from '../config/config.js';
 import { URLSearchParams, URL } from "node:url";
 import { v7 } from 'uuid';
 import { oxylabproxy, brightdataproxy } from '../config/proxy.js';
-import { rpHeaders, rpPayload, wpiHeaders, feedHeaders } from '../helper/igHttpHelper.js';
+import { rpHeaders, rpPayload, wpiHeaders, feedHeaders, highlightHeaders } from '../helper/igHttpHelper.js';
 
 /* =============================================================== */
 /* ============== Module-level :: proxy singletons =============== */
@@ -504,5 +504,157 @@ const aService = async (c: Context, url: string, shortcode: string, type: string
     }, 200 as any);
 }
 
+/* ============================================================ */
+/* =============== Handle Highlight HTTP Request ============== */
+/* ============================================================ */
+const hlService = async (c: Context, url: string, shortcode: string, type: string) => {
+    const hlPath = `https://i.instagram.com/api/v1/feed/reels_media/?reel_ids=highlight:${shortcode}`;
+
+    // Prepare headers
+    const hlHeaders = highlightHeaders(url);
+
+    // Error Handling
+    let hlJson: unknown;
+    try {
+        const hlCall = await fetch(`${hlPath}`, {
+            method: 'GET',
+            headers: hlHeaders,
+            dispatcher: oxylabAgent,
+            redirect: 'follow'
+        });
+
+        // hlCall failed
+        if (!hlCall.ok) {
+            return buildError(c, 500, `highlights service responded with ${hlCall.status}`);
+        }
+
+        // Process
+        hlJson = await hlCall.json();
+    } catch (error) {
+        return buildError(c, 500, `highlights service, internal server error: ${(error as Error).message}`);
+    }
+
+    // Further processing
+    const hlGet = (hlJson as any).reels ?? null;
+
+    // Return :: Private Highlight
+    if (!hlGet || Object.keys(hlGet).length === 0) {
+        return c.json({
+            success: false,
+            urid: v7(),
+            jar: {
+                media: {
+                    actual_type: type,
+                    expected_type: [ 'image', 'video' ],
+                    is_public: null,
+                    is_single: null
+                },
+                sf: {}
+            },
+            owner: NullOwner,
+            message: `you are trying to download a private ${type}, we do not support private downloading`,
+            timestamp: new Date().toISOString()
+        }, 404 as any)
+    }
+
+    // Further processing
+    const highlight = hlGet[`highlight:${shortcode}`];
+    const user = highlight.user ?? null
+    const rawItems = highlight.items ?? [];
+
+    // Build OwnerObject
+    const owner: Owner = {
+        id: user.id,
+        name: user.full_name,
+        username: user.username,
+        profileUrl: user.profile_pic_url,
+        account: {
+            is_private: user.is_private,
+            is_verified: user.is_verified,
+            _type: null,
+            displaylabel: null,
+            total_media_count: null,
+            followers_count: null,
+            following_count: null,
+            desc: null,
+            external_links: {},
+        }
+    }
+
+    // Loop through items
+    const items = rawItems.map((elm: any) => {
+
+        // Media type 1: Image Highlight
+        if (elm.media_type === 1) {
+            const candidates = elm.image_versions2.candidates ?? [];
+            return {
+                type: 'image',
+                qualities: candidates.map((x: any) => ({
+                    url: x.url,
+                    resolution: `${x.width}x${x.height}`
+                }))
+            };
+        }
+
+        // Media type 2: Video Highlight
+        if (elm.media_type === 2) {
+            const videoVersions = elm.video_versions ?? [];
+            const candidates = elm.image_versions2.candidates ?? [];
+
+            // Video highest download quality
+            const bestBandwidthVideo = videoVersions.reduce((best: any, v: any) =>
+                (v.bandwidth ?? 0) > (best.bandwidth ?? 0) ? v : best, videoVersions[0] ?? null
+            );
+
+            // candidates[0] = highest resolution thumbnail & return
+            const highestQualityThumbnailUrl = candidates[0] ?? null;
+            return {
+                type: 'video',
+                url: bestBandwidthVideo.url ?? null,
+                width: bestBandwidthVideo.width ?? null,
+                height: bestBandwidthVideo.height ?? null,
+                thumbnail: {
+                    url: highestQualityThumbnailUrl.url ?? null,
+                    width: highestQualityThumbnailUrl.width ?? null,
+                    height: highestQualityThumbnailUrl.height ?? null,
+                }
+            };
+        }
+
+    });
+
+    // Return
+    return c.json({
+        success: true,
+        urid: v7(),
+        jar: {
+            media: {
+                actual_type: type,
+                expected_type: [ 'image', 'video' ],
+                is_public: true,
+                is_single: highlight.media_count === 1 ? true : false
+            },
+            sf: { items }
+        },
+        owner: owner,
+        message: `${type} fetched successfully`,
+        timestamp: new Date().toISOString()
+    }, 200 as any);
+}
+
+/* ============================================================ */
+/* ================ Handle Stories HTTP Request =============== */
+/* ============================================================ */
+const storyService = async (c: Context, url: string, shortcode: string, type: string) => {
+    return c.json({
+        success: false,
+        urid: v7(),
+        jar: NullJar,
+        owner: NullOwner,
+        message: `stories downloading not implemented yet`,
+        timestamp: new Date().toISOString()
+    }, 406 as any);
+}
+
 // Export
-export { rpService, pfService, aService };
+export { rpService, pfService, aService, hlService, storyService };

@@ -6,7 +6,7 @@ const docsIDs = {
     'PolarisProfilePageContentQuery': '28812098038405011',
 }
 
-// Post & Reels Headers
+// Post & Reels Headers :: ( Login not Required )
 const rpHeaders = (friendlyName: string, fullUrl: string) => {
     const randomString = (length: number) => {
         const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -72,7 +72,7 @@ const rpHeaders = (friendlyName: string, fullUrl: string) => {
     };
 };
 
-// Post & Reels Payload
+// Post & Reels Payload :: ( Login not Required )
 const rpPayload = (friendlyName: string, variables: string) => {
     const randomString = (length: number) => {
         const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -118,7 +118,7 @@ const rpPayload = (friendlyName: string, variables: string) => {
     };
 };
 
-// Web Profile Info Header
+// Web Profile Info Header :: ( Login not Required )
 const wpiHeaders = (fullUrl: string) => {
     const randomString = (length: number) => {
         const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -179,7 +179,7 @@ const wpiHeaders = (fullUrl: string) => {
     };
 };
 
-// Feed Headers
+// Feed Headers :: ( Login not Required )
 const feedHeaders = (referer: string) => {
     const randomString = (length: number) => {
         const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -242,5 +242,189 @@ const feedHeaders = (referer: string) => {
     };
 };
 
+// Highlights Headers :: ( Login not Required )
+const highlightHeaders = (referer: string) => {
+    const randomString = (length: number) => {
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); }
+        return result;
+    };
+    const platforms = [
+        { ua: 'Windows NT 10.0; Win64; x64', platform: 'Windows', platform_version: '10.0.0' },
+        { ua: 'Macintosh; Intel Mac OS X 10_15_7', platform: 'macOS', platform_version: '10.15.7' },
+        { ua: 'X11; Linux x86_64', platform: 'Linux', platform_version: '0.0.0' },
+    ];
+    const colorschemes = ['light', 'dark'];
+    const platform = platforms[Math.floor(Math.random() * platforms.length)];
+    const majorVersion = Math.floor(Math.random() * (134 - 120 + 1)) + 120;
+    const build = Math.floor(Math.random() * (7000 - 6000 + 1)) + 6000;
+    const patch = Math.floor(Math.random() * (200 - 100 + 1)) + 100;
+    const fullVersion = `${majorVersion}.0.${build}.${patch}`;
+    const userAgent = `Mozilla/5.0 (${(platform as any).ua}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${majorVersion}.0.0.0 Safari/537.36`;
+    const secChUa = `"Chromium";v="${majorVersion}", "Not:A-Brand";v="24", "Google Chrome";v="${majorVersion}"`;
+    const secChUaFullVersionList = `"Chromium";v="${fullVersion}", "Not:A-Brand";v="24.0.0.0", "Google Chrome";v="${fullVersion}"`;
+    const csrf = randomString(32);
+    const locales = ['US', 'IN', 'GB'];
+    const locale = locales[Math.floor(Math.random() * locales.length)];
+
+    // Return
+    return {
+        'Accept': '*/*',
+        'Accept-Language': `en-${locale},en;q=${(Math.floor(Math.random() * 3) + 7) / 10},hi;q=0.${Math.floor(Math.random() * 4) + 5}`,
+        'Cookie': [
+            `mid=${randomString(26)}`,
+            `ig_did=${(randomString(8) + '-' + randomString(4) + '-' + randomString(4) + '-' + randomString(4) + '-' + randomString(12)).toUpperCase()}`,
+            'ig_nrcb=1',
+            `ps_l=${Math.random() < 0.5 ? 0 : 1}`,
+            `ps_n=${Math.random() < 0.5 ? 0 : 1}`,
+            `datr=${randomString(20)}`,
+            `csrftoken=${csrf}`,
+            `wd=${Math.floor(Math.random() * (1920 - 800 + 1)) + 800}x${Math.floor(Math.random() * (1080 - 600 + 1)) + 600}`,
+        ].join('; '),
+        'Priority': `u=${Math.floor(Math.random() * 3) + 1}, i`,
+        'Referer': referer,
+        'Sec-Ch-Prefers-Color-Scheme': colorschemes[Math.floor(Math.random() * colorschemes.length)],
+        'Sec-Ch-Ua': secChUa,
+        'Sec-Ch-Ua-Full-Version-List': secChUaFullVersionList,
+        'Sec-Ch-Ua-Mobile': `?${Math.random() < 0.5 ? 0 : 1}`,
+        'Sec-Ch-Ua-Model': '""',
+        'Sec-Ch-Ua-Platform': `"${(platform as any).platform}"`,
+        'Sec-Ch-Ua-Platform-Version': `"${(platform as any).platform_version}"`,
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'User-Agent': userAgent,
+        'X-Asbd-Id': String(Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000),
+        'X-Csrftoken': csrf,
+        'X-Ig-App-Id': '936619743392459',
+        'X-Ig-Www-Claim': '0',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-Web-Device-Id': `${randomString(8)}-${randomString(4)}-${randomString(4)}-${randomString(4)}-${randomString(12)}`,
+        'X-Web-Session-Id': `${randomString(6)}:${randomString(6)}:${randomString(5)}`,
+    };
+}
+
+// Stories Headers :: ( Caution ~ Login Required )
+const storyHeaders = (profileUrl: string) => {
+    const randomString = (length: number) => {
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); }
+        return result;
+    };
+    const platforms = [
+        { ua: 'Linux; Android 6.0; Nexus 5 Build/MRA58N', platform: 'Android', platform_version: '6.0', model: 'Nexus 5' },
+        { ua: 'Linux; Android 10; SM-G973F Build/QP1A.190711.020', platform: 'Android', platform_version: '10.0', model: 'SM-G973F' },
+        { ua: 'Linux; Android 12; Pixel 6 Build/SD1A.210817.036', platform: 'Android', platform_version: '12.0', model: 'Pixel 6' },
+    ];
+    const colorschemes = ['light', 'dark'];
+    const platform = platforms[Math.floor(Math.random() * platforms.length)];
+    const majorVersion = Math.floor(Math.random() * (134 - 120 + 1)) + 120;
+    const build = Math.floor(Math.random() * (7000 - 6000 + 1)) + 6000;
+    const patch = Math.floor(Math.random() * (200 - 100 + 1)) + 100;
+    const fullVersion = `${majorVersion}.0.${build}.${patch}`;
+    const userAgent = `Mozilla/5.0 (${(platform as any).ua}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${majorVersion}.0.0.0 Mobile Safari/537.36`;
+    const secChUa = `"Google Chrome";v="${majorVersion}", "Not.A/Brand";v="8", "Chromium";v="${majorVersion}"`;
+    const secChUaFullVersionList = `"Google Chrome";v="${fullVersion}", "Not.A/Brand";v="8.0.0.0", "Chromium";v="${fullVersion}"`;
+    const locales = ['US', 'IN', 'GB'];
+    const locale = locales[Math.floor(Math.random() * locales.length)];
+
+    // Return
+    return {
+        'Accept': '*/*,application/vnd.t1c.pxr-90-15',
+        'Accept-Language': `en-${locale},en;q=${(Math.floor(Math.random() * 3) + 7) / 10},hi-IN;q=0.8,hi;q=0.7,en-GB;q=0.6,en-US;q=0.5`,
+        'Cache-Control': 'no-cache',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Cookie': [
+            `datr=${ 'real datr required' }`,
+            `ig_did=${ 'real ig_idi required' }`,
+            'ig_nrcb=1',
+            `mid=${ 'real mid required' }`,
+            `ps_l=${ 'real ps_l required' }`,
+            `ps_n=${ 'real ps_m required' }`,
+            `ds_user_id=${ 'real ds_user_id required' }`,
+            `csrftoken=${ 'real csrftoken required' }`,
+            `dpr=${ 'real dpr required' }`,
+            `sessionid=${ 'real sessionid required' }`,
+            `rur="${ 'real rur required' }"`,
+            `wd=${ 'real wd required' }`,
+        ].join('; '),
+        'DNT': '1',
+        'Origin': 'https://www.instagram.com',
+        'Pragma': 'no-cache',
+        'Priority': `u=${Math.floor(Math.random() * 3) + 1}, i`,
+        'Referer': profileUrl,
+        'Sec-Ch-Prefers-Color-Scheme': colorschemes[Math.floor(Math.random() * colorschemes.length)],
+        'Sec-Ch-Ua': secChUa,
+        'Sec-Ch-Ua-Full-Version-List': secChUaFullVersionList,
+        'Sec-Ch-Ua-Mobile': '?1',
+        'Sec-Ch-Ua-Model': `"${(platform as any).model}"`,
+        'Sec-Ch-Ua-Platform': '"Android"',
+        'Sec-Ch-Ua-Platform-Version': `"${(platform as any).platform_version}"`,
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'User-Agent': userAgent,
+        'X-Asbd-Id': String(Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000),
+        'X-Bloks-Version-Id': crypto.createHash('sha256').update(randomString(32)).digest('hex'),
+        'X-Csrftoken': '', // real csrftoken required
+        'X-Fb-Friendly-Name': 'PolarisStoriesV3ReelPageStandaloneQuery',
+        'X-Fb-Lsd': randomString(11),
+        'X-Ig-App-Id': '936619743392459',
+        'X-Root-Field-Name': 'xdt_api__v1__feed__reels_media',
+    };
+}
+
+// Stories Payload :: ( Caution ~ Login Required )
+const storyPlayload = (profileID: string) => {
+    const randomString = (length: number) => {
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); }
+        return result;
+    };
+    const randomStringMixed = (length: number) => {
+        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_';
+        let result = '';
+        for (let i = 0; i < length; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); }
+        return result;
+    };
+    const randomHex = (min: number, max: number) => { return Math.floor(Math.random() * (max - min + 1) + min).toString(16); };
+
+    // Return
+    return {
+        av: String(Math.floor(Math.random() * (99999999999999999 - 10000000000000000 + 1)) + 10000000000000000),
+        __d: Math.random() < 0.5 ? 'www' : 'm',
+        __user: String(Math.floor(Math.random() * 1000000000)),
+        __a: String(Math.random() < 0.5 ? 0 : 1),
+        __req: randomHex(1, 255),
+        __hs: `${Math.floor(Math.random() * (20600 - 20500 + 1)) + 20500}.HYP:instagram_web_pkg.2.1...0`,
+        dpr: String(Math.floor(Math.random() * 3) + 1),
+        __ccg: ['EXCELLENT', 'GOOD', 'MODERATE'][Math.floor(Math.random() * 3)],
+        __rev: String(Math.floor(Math.random() * (1037999999 - 1036000000 + 1)) + 1036000000),
+        __s: `${randomString(6)}:${randomString(6)}:${randomString(6)}`,
+        __hsi: String(Math.floor(Math.random() * (9999999999999999 - 7000000000000000 + 1)) + 7000000000000000),
+        __dyn: randomStringMixed(Math.floor(Math.random() * (420 - 380 + 1)) + 380),
+        __csr: randomStringMixed(Math.floor(Math.random() * (500 - 400 + 1)) + 400),
+        __hsdp: randomStringMixed(Math.floor(Math.random() * (300 - 200 + 1)) + 200),
+        __hblp: randomStringMixed(Math.floor(Math.random() * (350 - 250 + 1)) + 250),
+        __sjsp: randomStringMixed(Math.floor(Math.random() * (100 - 60 + 1)) + 60),
+        __comet_req: String(Math.floor(Math.random() * 10) + 1),
+        fb_dtsg: `${randomStringMixed(40)}:${Math.floor(Math.random() * (999999999999999 - 100000000000000 + 1)) + 100000000000000}:${Math.floor(Date.now() / 1000)}`,
+        jazoest: String(Math.floor(Math.random() * 99999)),
+        lsd: randomStringMixed(20),
+        __spin_r: String(Math.floor(Math.random() * (1037999999 - 1036000000 + 1)) + 1036000000),
+        __spin_b: Math.random() < 0.5 ? 'trunk' : 'stable',
+        __spin_t: String(Math.floor(Date.now() / 1000)),
+        __crn: 'comet.igweb.PolarisProfilePostsTabRoute',
+        fb_api_caller_class: 'RelayModern',
+        fb_api_req_friendly_name: 'PolarisStoriesV3ReelPageStandaloneQuery',
+        server_timestamps: 'true',
+        variables: JSON.stringify({ reel_ids_arr: profileID }),
+        doc_id: '25894448303589883',
+    };
+}
+
 // Export
-export { rpHeaders, rpPayload, wpiHeaders, feedHeaders };
+export { rpHeaders, rpPayload, wpiHeaders, feedHeaders, highlightHeaders, storyHeaders, storyPlayload };

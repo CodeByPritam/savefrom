@@ -12,7 +12,7 @@ const dissectIgUrl = (url: string) => {
         postRegex: /^p\/([a-zA-Z0-9_\-]+)\/?$/,
         reelsRegex: /^reels?\/([a-zA-Z0-9_\-]+)\/?$/,
         audioRegex: /^reels?\/audio\/(\d+)\/?$/,
-        BigUrlFormatHighlightsRegex: /^stories\/highlights\/(\d+)\/?$/,
+        bigUrlFormatHighlightsRegex: /^stories\/highlights\/(\d+)\/?$/,
         shortUrlFormatHighlightRegex: /^s\/([a-zA-Z0-9]+)\/?$/,
         storiesRegex: /^stories\/([a-zA-Z0-9_.\-]+)(?:\/(\d+))?\/?$/,
         profileRegex: /^([a-zA-Z0-9_.\-]+)\/?$/,
