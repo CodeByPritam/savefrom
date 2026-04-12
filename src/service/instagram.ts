@@ -530,7 +530,7 @@ const hlService = async (c: Context, url: string, shortcode: string, type: strin
     // Prepare headers
     const hlHeaders = highlightHeaders(url);
 
-    // Error Handling
+    // Highlights Fetch
     let hlJson: unknown;
     try {
         const hlCall = await fetch(`${hlPath}`, {
@@ -548,7 +548,7 @@ const hlService = async (c: Context, url: string, shortcode: string, type: strin
         // Process
         hlJson = await hlCall.json();
     } catch (error) {
-        return buildError(c, 500, `highlights service, internal server error: ${(error as Error).message}`);
+        return buildError(c, 500, `highlights service error: ${(error as Error).message}`);
     }
 
     // Further processing
@@ -556,38 +556,35 @@ const hlService = async (c: Context, url: string, shortcode: string, type: strin
 
     // Return :: Private Highlight
     if (!hlGet || Object.keys(hlGet).length === 0) {
-        return c.json({
+        return buildResponse(c, 404, {
             success: false,
-            urid: v7(),
             jar: {
                 media: {
                     actual_type: type,
                     expected_type: [ 'image', 'video' ],
                     is_public: null,
-                    is_single: null
+                    is_single: null,
                 },
-                sf: {}
+                sf: {},
             },
-            owner: NullOwner,
-            message: `you are trying to download a private ${type}, we do not support private downloading`,
-            timestamp: new Date().toISOString()
-        }, 404 as any)
+            message: `you are trying to download a private ${type}, private content is not supported`,
+        })
     }
 
     // Further processing
     const highlight = hlGet[`highlight:${shortcode}`];
     const user = highlight.user ?? null
-    const rawItems = highlight.items ?? [];
+    const rawItems: any[] = highlight.items ?? [];
 
     // Build OwnerObject
     const owner: Owner = {
-        id: user.id,
-        name: user.full_name,
-        username: user.username,
-        profileUrl: user.profile_pic_url,
+        id: user.id ?? null,
+        name: user.full_name ?? null,
+        username: user.username ?? null,
+        profileUrl: user.profile_pic_url ?? null,
         account: {
-            is_private: user.is_private,
-            is_verified: user.is_verified,
+            is_private: user.is_private ?? null,
+            is_verified: user.is_verified ?? null,
             _type: null,
             displaylabel: null,
             total_media_count: null,
@@ -603,60 +600,67 @@ const hlService = async (c: Context, url: string, shortcode: string, type: strin
 
         // Media type 1: Image Highlight
         if (elm.media_type === 1) {
-            const candidates = elm.image_versions2.candidates ?? [];
+            const candidates: any[] = elm.image_versions2.candidates ?? [];
+            const qualities = candidates
+            .sort((a, b) => (b.width * b.height) - (a.width * a.height))
+            .slice(0, 3)
+            .map((x: any) => ({
+                qualityid: v7(),
+                url: x.url ?? null,
+                width: x.width ?? null,
+                height: x.height ?? null,
+            }));
+
+            // Return
             return {
+                idpost: v7(),
                 type: 'image',
-                qualities: candidates.map((x: any) => ({
-                    url: x.url,
-                    resolution: `${x.width}x${x.height}`
-                }))
+                qualities,
             };
         }
 
         // Media type 2: Video Highlight
         if (elm.media_type === 2) {
-            const videoVersions = elm.video_versions ?? [];
-            const candidates = elm.image_versions2.candidates ?? [];
+            const videoVersions: any[] = elm.video_versions ?? [];
+            const candidates: any[] = elm.image_versions2.candidates ?? [];
 
             // Video highest download quality
-            const bestBandwidthVideo = videoVersions.reduce((best: any, v: any) =>
+            const bestVideo = videoVersions.reduce((best: any, v: any) =>
                 (v.bandwidth ?? 0) > (best.bandwidth ?? 0) ? v : best, videoVersions[0] ?? null
             );
 
             // candidates[0] = highest resolution thumbnail & return
-            const highestQualityThumbnailUrl = candidates[0] ?? null;
+            const highestQualityPreviewUrl = candidates[0] ?? null;
             return {
+                idreel: v7(),
                 type: 'video',
-                url: bestBandwidthVideo.url ?? null,
-                width: bestBandwidthVideo.width ?? null,
-                height: bestBandwidthVideo.height ?? null,
+                videoUrl: bestVideo.url ?? null,
+                width: bestVideo.width ?? null,
+                height: bestVideo.height ?? null,
                 thumbnail: {
-                    url: highestQualityThumbnailUrl.url ?? null,
-                    width: highestQualityThumbnailUrl.width ?? null,
-                    height: highestQualityThumbnailUrl.height ?? null,
+                    previewUrl: highestQualityPreviewUrl.url ?? null,
+                    width: highestQualityPreviewUrl.width ?? null,
+                    height: highestQualityPreviewUrl.height ?? null,
                 }
             };
         }
-
     });
 
     // Return
-    return c.json({
+    return buildResponse(c, 200, {
         success: true,
-        urid: v7(),
         jar: {
             media: {
                 actual_type: type,
                 expected_type: [ 'image', 'video' ],
                 is_public: true,
-                is_single: highlight.media_count === 1 ? true : false
+                is_single: highlight.media_count === 1,
             },
-            sf: { items }
+            sf: items,
         },
         owner: owner,
         message: `${type} fetched successfully`,
-        timestamp: new Date().toISOString()
-    }, 200 as any);
+    })
 }
 
 /* ============================================================ */
