@@ -486,5 +486,16 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
     return buildError(c, 422, 'Unexpected profile/feed state, no matching response'); 
 }
 
+/* ============================================================ */
+/* ========= Handle Reels & Normal Audio HTTP Request ========= */
+/* ============================================================ */
+const aService = async (c: Context, url: string, shortcode: string, type: string) => {
+    return c.json({
+        url,
+        shortcode,
+        type
+    }, 200);
+}
+
 // Export
-export { rpService, pfService };
+export { rpService, pfService, aService };

@@ -57,6 +57,9 @@ const downloadController: Handler = async (c: Context) => {
             if ((dIgUrl as any).isPost) { type = 'post' }
             if ((dIgUrl as any).isReel) { type = 'reels' }
             if ((dIgUrl as any).isProfile) { type = 'profile' }
+            if ((dIgUrl as any).isAudio) { type = 'audio' }
+            if ((dIgUrl as any).isHighlight) { type = 'highlight' }
+            if ((dIgUrl as any).isStory) { type = 'story' }
 
             // Cases
             if ((dIgUrl as any).isPost || (dIgUrl as any).isReel) { return await rpService(c, refinedUrl, shortcode, type as string); }
