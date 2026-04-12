@@ -506,22 +506,19 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
 /* ========= Handle Reels & Normal Audio HTTP Request ========= */
 /* ============================================================ */
 const aService = async (c: Context, url: string, shortcode: string, type: string) => {
-    return c.json({
+    return buildResponse(c, 200, {
         success: true,
-        urid: v7(),
         jar: {
             media: {
                 actual_type: type,
                 expected_type: [ 'audio/mp3' ],
                 is_public: null,
-                is_single: null
+                is_single: null,
             },
-            sf: {}
+            sf: {},
         },
-        owner: NullOwner,
-        message: `audio links are not supported, use reels link to download audio`,
-        timestamp: new Date().toISOString()
-    }, 200 as any);
+        message: `audio links are not supported yet, use the reels URL to download audio`,
+    });
 }
 
 /* ============================================================ */
@@ -666,14 +663,10 @@ const hlService = async (c: Context, url: string, shortcode: string, type: strin
 /* ================ Handle Stories HTTP Request =============== */
 /* ============================================================ */
 const storyService = async (c: Context, url: string, shortcode: string, type: string) => {
-    return c.json({
+    return buildResponse(c, 406, {
         success: false,
-        urid: v7(),
-        jar: NullJar,
-        owner: NullOwner,
-        message: `stories downloading not implemented yet`,
-        timestamp: new Date().toISOString()
-    }, 406 as any);
+        message: 'stories downloading is not yet implemented, comming soon',
+    });
 }
 
 // Export
