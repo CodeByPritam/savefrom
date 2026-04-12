@@ -88,7 +88,7 @@ const NullJar = {
 const buildError = (c: Context, status: number, message: string) => {
     c.json({
         success: false,
-        _idx: v7(),
+        urid: v7(),
         jar: NullJar,
         owner: NullOwner,
         message,
@@ -159,13 +159,13 @@ const rpService = async (c: Context, url: string, shortcode: string, type: strin
     }
 
     // Further processing
-    const response = (rawGraphQl as any).data.xdt_shortcode_media;
+    const response = (rawGraphQl as any).data.xdt_shortcode_media ?? null;
 
     // Private content
     if (response === null || response === undefined) {
         return c.json({
             success: false,
-            _idx: v7(),
+            urid: v7(),
             jar: {
                 media: {
                     actual_type: type,
@@ -188,7 +188,7 @@ const rpService = async (c: Context, url: string, shortcode: string, type: strin
         // Response
         return c.json({
             success: true,
-            _idx: v7(),
+            urid: v7(),
             jar: {
                 media: {
                     actual_type: type,
@@ -212,7 +212,7 @@ const rpService = async (c: Context, url: string, shortcode: string, type: strin
         // Response
         return c.json({
             success: true,
-            _idx: v7(),
+            urid: v7(),
             jar: {
                 media: {
                     actual_type: type,
@@ -237,7 +237,7 @@ const rpService = async (c: Context, url: string, shortcode: string, type: strin
         // Return
         return c.json({
             success: true,
-            _idx: v7(),
+            urid: v7(),
             jar: {
                 media: {
                     actual_type: type,
@@ -297,7 +297,7 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
         if (!userID) {
             return c.json({
                 success: false,
-                _idx: v7(),
+                urid: v7(),
                 jar: NullJar,
                 owner: NullOwner,
                 message: `User "${shortcode}" not found or account does not exist`,
@@ -388,7 +388,7 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
     if (owner.account.is_private) {
         return c.json({
             success: true,
-            _idx: v7(),
+            urid: v7(),
             jar: {
                 media: {
                     actual_type: type,
@@ -408,7 +408,7 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
     if (!owner.account.is_private && getfeed.length === 0 && (owner.account.total_media_count ?? 0) === 0) {
         return c.json({
             success: true,
-            _idx: v7(),
+            urid: v7(),
             jar: {
                 media: {
                     actual_type: type,
@@ -466,7 +466,7 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
         // return
         return c.json({
             success: true,
-            _idx: v7(),
+            urid: v7(),
             jar: {
                 media: {
                     actual_type: type,
