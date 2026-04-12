@@ -322,16 +322,12 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
         const wpiJson = await wpiCall.json();
         userID = (wpiJson as any).data.user.id ?? null;
 
-        // Critical :: no point continuing without a valid userID
+        // No userID :: Account Does Not Exist Or Blocked
         if (!userID) {
-            return c.json({
+            return buildResponse(c, 404, {
                 success: false,
-                urid: v7(),
-                jar: NullJar,
-                owner: NullOwner,
-                message: `User "${shortcode}" not found or account does not exist`,
-                timestamp: new Date().toISOString()
-            }, 404 as any);
+                message: `user "${shortcode}" not found or account does not exist`,
+            });
         }
     } catch (error) {
         return buildError(c, 500, `wpi error: ${(error as Error).message}`);
@@ -373,13 +369,13 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
         })
     ]);
 
-    // Surface any rejection :: from step 2 & from step 3
-    if (profileResult.status === 'rejected') { return buildError(c, 500, `profile error: ${profileResult.reason}`); }
-    if (feedResult.status === 'rejected') { return buildError(c, 500, `feed error: ${feedResult.reason}`); }
+    // Surface Network-level rejections
+    if (profileResult.status === 'rejected') { return buildError(c, 500, `profile fetch failed: ${profileResult.reason}`); }
+    if (feedResult.status === 'rejected') { return buildError(c, 500, `feed fetch failed: ${feedResult.reason}`); }
 
-    // Check HTTP status code :: On success response
-    if (!profileResult.value.ok) { return buildError(c, 502, `profile api responded with ${profileResult.value.status}`); }
-    if (!feedResult.value.ok) { return buildError(c, 502, `feed api responed with ${feedResult.value.status}`); }
+    // Surface HTTP-level errors
+    if (!profileResult.value.ok) { return buildError(c, 502, `profile API responded with ${profileResult.value.status}`); }
+    if (!feedResult.value.ok) { return buildError(c, 502, `feed API responed with ${feedResult.value.status}`); }
 
     // Parse both response
     let getprofile;
@@ -399,58 +395,52 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
         id: getprofile.id,
         name: getprofile.full_name,
         username: getprofile.username,
-        profileUrl: getprofile.hd_profile_pic_url_info.url,
+        profileUrl: getprofile.hd_profile_pic_url_info.url ?? null,
         account: {
             is_private: getprofile.is_private,
             is_verified: getprofile.is_verified,
             _type: `account type ${getprofile.account_type}`,
-            displaylabel: getprofile.category,
-            total_media_count: getprofile.media_count,
-            followers_count: getprofile.follower_count,
-            following_count: getprofile.following_count,
-            desc: getprofile.biography,
+            displaylabel: getprofile.category ?? null,
+            total_media_count: getprofile.media_count ?? null,
+            followers_count: getprofile.follower_count ?? null,
+            following_count: getprofile.following_count ?? null,
+            desc: getprofile.biography ?? null,
             external_links: getprofile.bio_links.length >= 1 ? getprofile.bio_links : {},
         }
     };
 
+    // Shared JarMedia
+    const sharedJarMedia: JarMedia = {
+        actual_type: type,
+        expected_type: [ 'image', 'video' ],
+        is_public: null,
+        is_single: null,
+    }
+
     // Full Private Person :: Private account + No feed
     if (owner.account.is_private) {
-        return c.json({
+        return buildResponse(c, 200, {
             success: true,
-            urid: v7(),
             jar: {
-                media: {
-                    actual_type: type,
-                    expected_type: [ 'image', 'video' ],
-                    is_public: false,
-                    is_single: null
-                },
-                sf: {}
+                media: sharedJarMedia,
+                sf: {},
             },
             owner: owner,
-            message: `private account detected, without public content`,
-            timestamp: new Date().toISOString()
-        }, 200 as any);
+            message: `private account detected, no public content available`
+        });
     }
 
     // Semi - Private Persion :: Public account + No feed
     if (!owner.account.is_private && getfeed.length === 0 && (owner.account.total_media_count ?? 0) === 0) {
-        return c.json({
+        return buildResponse(c, 200, {
             success: true,
-            urid: v7(),
             jar: {
-                media: {
-                    actual_type: type,
-                    expected_type: [ 'image', 'video' ],
-                    is_public: true,
-                    is_single: null
-                },
-                sf: {}
+                media: sharedJarMedia,
+                sf: {},
             },
             owner: owner,
-            message: 'public account detected, without content',
-            timestamp: new Date().toISOString()
-        }, 200 as any);
+            message: 'public account detected, no public content available',
+        });
     }
 
     // Full Open Person :: Public account + With feed
@@ -461,54 +451,55 @@ const pfService = async (c: Context, url: string, shortcode: string, type: strin
             // images (carousel)
             if (elm.product_type === 'carousel_container') {
                 const cmnode = (elm.carousel_media ?? []).map((cm: any) => {
-                    const candidates = cm.image_versions2.candidates || [];
-                    return [...candidates]
+                    const candidates: any[] = cm.image_versions2.candidates || [];
+                    return candidates
                     .sort((a, b) => (b.width * b.height) - (a.width * a.height))
                     .slice(0,1)
                     .map((img: any) => ({
+                        qualityid: v7(),
                         url: img.url,
-                        resolution: `${img.width}x${img.height}`
+                        width: img.width,
+                        height: img.height,
                     }))[0];
                 });
-                feedArray.push({ node: cmnode, type: ['image'] });
+                feedArray.push({ idpost: v7(), node: cmnode, type: 'image' });
             }
 
             // videos / Reels
             if (elm.product_type === 'clips') {
-                const candidates = elm.video_versions || [];
-                const top3 = [...candidates]
+                const candidates: any[] = elm.video_versions || [];
+                const best = candidates
                 .sort((a, b) => (b.width * b.height) - (a.width * a.height))
                 .slice(0, 1)
                 .map((vid: any) => ({
+                    qualityid: v7(),
                     url: vid.url,
-                    resolution: `${vid.width}x${vid.height}`
+                    width: vid.width,
+                    height: vid.height,
                 }))[0];
-                feedArray.push({ node: top3, type: ['video'] });
+                feedArray.push({ idreel: v7(), node: best, type: 'video' });
             }
 
         }
 
         // return
-        return c.json({
+        return buildResponse(c, 200, {
             success: true,
-            urid: v7(),
             jar: {
                 media: {
-                    actual_type: type,
-                    expected_type: [ 'image', 'video' ],
-                    is_public: true,
-                    is_single: false
+                    ...sharedJarMedia, 
+                    is_public: true, 
+                    is_single: (owner.account.total_media_count as number) > 1 ? false : true,
                 },
                 sf: feedArray
             },
             owner: owner,
-            message: `public account detected, with content`,
-            timestamp: new Date().toISOString()
-        }, 200 as any);
+            message: `public account detected, profile and feed fetched successfully`,
+        });
     }
 
     // Fallback — keeps TypeScript + runtime happy
-    return buildError(c, 422, 'Unexpected profile/feed state, no matching response'); 
+    return buildError(c, 422, 'Unexpected profile or feed state, no matching response'); 
 }
 
 /* ============================================================ */
